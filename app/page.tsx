@@ -4,6 +4,7 @@ import { createDocument, deleteDocument } from "@/app/actions/document";
 import { connectDB } from "@/lib/mongoose";
 import { redirect } from "next/navigation";
 import { AppDocument, IDocument } from "@/models/Document";
+import Link from "next/link";
 
 export default async function Home() {
   const session = await auth();
@@ -16,7 +17,7 @@ export default async function Home() {
   let documents: IDocument[] = [];
   try {
     await connectDB();
-    documents = await AppDocument.find({ ownerId: session?.user?.id })
+    documents = await AppDocument.find({})
       .sort({ createdAt: -1 })
       .lean();
     console.log("Database connected successfully");
@@ -76,12 +77,14 @@ export default async function Home() {
               <div className="flex flex-col gap-3">
                 {documents.map((doc: IDocument) => (
                   <div key={String(doc._id)} className="flex items-center justify-between rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700">
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">{String(doc.title)}</span>
+                    <Link href={`/notes/${String(doc._id)}`} className="flex-1 font-medium text-zinc-900 hover:text-indigo-600 dark:text-zinc-100 dark:hover:text-indigo-400 transition-colors">
+                      {String(doc.title)}
+                    </Link>
                     <form action={deleteDocument}>
                       <input type="hidden" name="documentId" value={String(doc._id)} />
                       <button
                         type="submit"
-                        className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
+                        className="ml-4 rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
                       >
                         Delete
                       </button>
