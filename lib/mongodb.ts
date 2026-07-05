@@ -11,6 +11,9 @@ const options = {
     strict: true,
     deprecationErrors: true,
   },
+  maxPoolSize: 10,
+  minPoolSize: 1,
+  maxIdleTimeMS: 10000,
 };
 
 let client: MongoClient;
