@@ -7,7 +7,7 @@ export interface ICollaborator {
 
 export interface IDocument extends MongooseDocument {
   title: string;
-  content: any; // Mixed JSON object or String
+  content: any;
   ownerId: mongoose.Types.ObjectId;
   collaborators: ICollaborator[];
 }

@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/mongoose";
 import { redirect } from "next/navigation";
 import { AppDocument, IDocument } from "@/models/Document";
 import Link from "next/link";
+import { getDocumentScopeQuery } from "@/lib/auth-guards";
 
 export default async function Home() {
   const session = await auth();
@@ -17,7 +18,7 @@ export default async function Home() {
   let documents: IDocument[] = [];
   try {
     await connectDB();
-    documents = await AppDocument.find({})
+    documents = await AppDocument.find(getDocumentScopeQuery(session!.user!.id!))
       .sort({ createdAt: -1 })
       .lean();
     console.log("Database connected successfully");

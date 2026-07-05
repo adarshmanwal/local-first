@@ -15,7 +15,6 @@ const options = {
 
 let client: MongoClient;
 
-// Create a global variable to preserve the MongoDB client connection across hot reloads in development.
 declare global {
   var _mongoClient: MongoClient | undefined;
 }
@@ -29,6 +28,4 @@ if (process.env.NODE_ENV === "development") {
   client = new MongoClient(uri, options);
 }
 
-// Export a module-scoped MongoClient promise. By doing this in a
-// separate module, the client can be shared across functions.
 export const clientPromise = client.connect();

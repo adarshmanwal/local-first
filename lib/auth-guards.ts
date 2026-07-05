@@ -47,7 +47,6 @@ export async function withDocumentScoping(
   return doc;
 }
 
-// Example wrapper for a mongoose query to enforce scoping automatically
 export function getDocumentScopeQuery(userId: string, requireEdit: boolean = false) {
   if (requireEdit) {
     return {

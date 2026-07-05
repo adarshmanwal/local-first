@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { connectDB } from '@/lib/mongoose';
-import { DocumentVersion } from '@/models/DocumentVersion';
 import { AppDocument } from '@/models/Document';
+import { DocumentVersion } from '@/models/DocumentVersion';
+import { getDocumentScopeQuery } from '@/lib/auth-guards';
 
 import { z } from 'zod';
 
@@ -25,16 +26,17 @@ export async function POST(req: Request) {
         const { docId } = parsed.data;
         await connectDB();
 
-        // 1. Fetch the current document
-        const currentDoc = await AppDocument.findById(docId);
+        const currentDoc = await AppDocument.findOne({
+            _id: docId,
+            ...getDocumentScopeQuery(session.user.id, true)
+        });
         if (!currentDoc) {
             return NextResponse.json({ error: 'Document not found' }, { status: 404 });
         }
 
-        // 2. Create the snapshot
         const newVersion = await DocumentVersion.create({
             documentId: currentDoc._id,
-            snapshot: currentDoc.content, // Changed from snapshotData to match model
+            snapshot: currentDoc.content,
             createdBy: session.user.id,
         });
 
@@ -61,10 +63,9 @@ export async function GET(req: Request) {
 
         await connectDB();
 
-        // Fetch versions sorted by newest first
         const versions = await DocumentVersion.find({ documentId: docId })
             .sort({ createdAt: -1 })
-            .select('createdAt _id'); // We only need id and date for the sidebar list
+            .select('createdAt _id'); 
 
         return NextResponse.json({ success: true, versions });
     } catch (error) {

@@ -29,16 +29,14 @@ export const useEditorStore = create<EditorState>((set, get) => {
     content: '',
     isSyncing: false,
 
-    // 1. Instantly load from IndexedDB without network blocking
     initDocument: async (id) => {
       const localDoc = await idbGet(`doc_${id}`);
       set({
         docId: id,
-        content: localDoc || '' // Instantly set local or empty
+        content: localDoc || ''
       });
     },
 
-    // 2. Safely fetch remote changes in background
     fetchServerState: async (id) => {
       try {
         const response = await fetch(`/api/documents/${id}`);
@@ -47,17 +45,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
         const serverData = await response.json();
         const remoteContent = serverData.document?.content || '';
 
-        // Safely check if the user has pending offline edits for THIS document
         const queue: SyncQueueItem[] = (await idbGet('sync_queue')) || [];
         const hasPendingEdits = queue.some(op => op.docId === id);
 
-        // ONLY overwrite local state if the user hasn't made offline changes
-        // otherwise, we respect the user's offline work!
         if (!hasPendingEdits) {
           const currentLocal = await idbGet(`doc_${id}`);
           if (currentLocal !== remoteContent) {
             await idbSet(`doc_${id}`, remoteContent);
-            // If the user is actively viewing this document, update UI
             if (get().docId === id) {
               set({ content: remoteContent });
             }
@@ -119,7 +113,6 @@ export const useEditorStore = create<EditorState>((set, get) => {
       try {
         const queue: SyncQueueItem[] = (await idbGet('sync_queue')) || [];
         
-        // Fix: ONLY grab operations for the currently active document
         const docOperations = queue.filter(op => op.docId === docId);
         
         if (docOperations.length === 0) {
@@ -127,7 +120,6 @@ export const useEditorStore = create<EditorState>((set, get) => {
           return;
         }
 
-        // Grab the most recent edit for this document (Last Write Wins)
         const latestOp = docOperations[docOperations.length - 1];
 
         const response = await fetch('/api/sync', {
@@ -140,7 +132,6 @@ export const useEditorStore = create<EditorState>((set, get) => {
           throw new Error('Network response was not ok');
         }
 
-        // Fix: Keep operations for OTHER documents, only remove the synced document's ops
         const remainingQueue = queue.filter(op => op.docId !== docId);
         await idbSet('sync_queue', remainingQueue);
 

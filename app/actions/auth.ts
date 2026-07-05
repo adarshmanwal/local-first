@@ -19,7 +19,6 @@ export async function loginUser(state: any, formData: FormData) {
           return { error: "Something went wrong." };
       }
     }
-    // Next.js redirect throws an error, so we must rethrow it
     throw error;
   }
 }
@@ -49,7 +48,6 @@ export async function registerUser(state: any, formData: FormData) {
       password: hashedPassword,
     });
 
-    // Automatically log in the user after successful registration
     await signIn("credentials", {
       email,
       password,
@@ -59,7 +57,6 @@ export async function registerUser(state: any, formData: FormData) {
     if (error instanceof AuthError) {
       return { error: "Something went wrong during login." };
     }
-    // Next.js redirect throws an error, so we must rethrow it
     throw error;
   }
 }

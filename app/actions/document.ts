@@ -39,7 +39,6 @@ export async function deleteDocument(formData: FormData) {
 
   await connectDB();
   
-  // Verify ownership
   const doc = await AppDocument.findById(documentId);
   if (!doc) throw new Error("Document not found");
   if (doc.ownerId.toString() !== session.user.id) {

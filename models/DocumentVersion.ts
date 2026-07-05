@@ -2,7 +2,7 @@ import mongoose, { Schema, Document as MongooseDocument, Model } from "mongoose"
 
 export interface IDocumentVersion extends MongooseDocument {
   documentId: mongoose.Types.ObjectId;
-  snapshot: any; // Mixed JSON object or String
+  snapshot: any;
   createdAt: Date;
   createdBy: mongoose.Types.ObjectId;
 }
