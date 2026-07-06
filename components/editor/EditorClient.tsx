@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useEditorStore } from '@/store/useEditorStore';
 import { VersionSidebar } from './VersionSidebar';
 import { ShareDocument } from './ShareDocument';
@@ -12,11 +13,12 @@ interface VersionItem {
 
 interface EditorClientProps {
     docId: string;
+    title: string;
     initialContent: string;
     role: 'Owner' | 'Editor' | 'Viewer';
 }
 
-export function EditorClient({ docId: initialDocId, initialContent, role }: EditorClientProps) {
+export function EditorClient({ docId: initialDocId, title, initialContent, role }: EditorClientProps) {
     const { docId, content, isSyncing, initDocument, fetchServerState, updateContent } = useEditorStore();
     const [versions, setVersions] = useState<VersionItem[]>([]);
     const [showSidebar, setShowSidebar] = useState(false);
@@ -24,22 +26,17 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
     const isViewer = role === 'Viewer';
     const canEdit = !isViewer;
 
-    // 1. Instant Local Load & Background Sync
     useEffect(() => {
         if (!initialDocId) return;
 
-        // Load instantly from IndexedDB (0 network latency), passing fallback content
         initDocument(initialDocId);
 
-        // Fetch server state in the background safely
         fetchServerState(initialDocId);
 
-        // Keep syncing in background every 0.5s
-        const intervalId = setInterval(() => fetchServerState(initialDocId), 500);
+        const intervalId = setInterval(() => fetchServerState(initialDocId), 1000);
         return () => clearInterval(intervalId);
     }, [initialDocId, initDocument, fetchServerState]);
 
-    // 2. Fetch Version History List
     const fetchVersions = async () => {
         if (!initialDocId) return;
         try {
@@ -62,7 +59,7 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
                 body: JSON.stringify({ docId: initialDocId }),
             });
             if (res.ok) {
-                fetchVersions(); // Refresh the sidebar list
+                fetchVersions();
             }
         } catch (error) {
             console.error("Failed to save snapshot", error);
@@ -75,11 +72,10 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        if (!canEdit) return; // Hard block local edits for viewers
+        if (!canEdit) return;
         updateContent(e.target.value);
     };
 
-    // Use local store content or fallback to initial server content if IDB is empty and fetch hasn't completed
     const displayContent = docId === initialDocId ? content : initialContent;
 
     return (
@@ -88,9 +84,13 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
                 <div className="w-full max-w-5xl flex flex-col h-[calc(100vh-4rem)]">
                     <header className="flex justify-between items-center mb-6 pb-4 border-b border-neutral-800/60 text-sm">
                         <div className="flex items-center gap-3 text-neutral-400">
-                            <div className={`w-2 h-2 rounded-full ${canEdit ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-amber-500'}`}></div>
+                            <Link href="/" className="p-1.5 rounded-md hover:bg-neutral-800 hover:text-indigo-400 transition-colors mr-1" title="Back to Notes">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8" />
+                                </svg>
+                            </Link>
                             <span className="font-medium tracking-wide">
-                                Doc: <span className="text-neutral-200">{initialDocId}</span> 
+                                <span className="text-neutral-200">{title}</span>
                                 <span className="ml-2 px-2 py-0.5 rounded bg-neutral-800 text-[10px] uppercase">{role}</span>
                             </span>
                         </div>
@@ -99,8 +99,8 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
                             {canEdit && (
                                 <>
                                     <span className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-colors duration-300 ${isSyncing
-                                            ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                                            : 'bg-neutral-800/50 text-neutral-400 border border-neutral-700'
+                                        ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                                        : 'bg-neutral-800/50 text-neutral-400 border border-neutral-700'
                                         }`}>
                                         {isSyncing ? 'Syncing...' : 'Saved'}
                                     </span>
@@ -115,8 +115,8 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
                             <button
                                 onClick={toggleSidebar}
                                 className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase border transition-colors duration-300 ${showSidebar
-                                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.3)]'
-                                        : 'bg-neutral-800/50 text-neutral-400 border-neutral-700 hover:text-neutral-200'
+                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.3)]'
+                                    : 'bg-neutral-800/50 text-neutral-400 border-neutral-700 hover:text-neutral-200'
                                     }`}
                             >
                                 {showSidebar ? 'Hide History' : 'History'}
@@ -136,11 +136,11 @@ export function EditorClient({ docId: initialDocId, initialContent, role }: Edit
                     </div>
                 </div>
             </div>
-            
-            <VersionSidebar 
-                versions={versions} 
-                showSidebar={showSidebar} 
-                role={role} 
+
+            <VersionSidebar
+                versions={versions}
+                showSidebar={showSidebar}
+                role={role}
             />
         </>
     );

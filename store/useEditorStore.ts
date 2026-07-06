@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { get as idbGet, set as idbSet } from 'idb-keyval';
 import debounce from 'lodash.debounce';
 
+const channel = typeof window !== 'undefined' ? new BroadcastChannel('editor_sync') : null;
+
 interface SyncQueueItem {
   docId: string;
   content: string;
@@ -20,9 +22,20 @@ interface EditorState {
 }
 
 export const useEditorStore = create<EditorState>((set, get) => {
+  if (channel) {
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'CONTENT_UPDATE') {
+        const { docId: msgDocId, content: msgContent } = event.data;
+        if (get().docId === msgDocId) {
+          set({ content: msgContent });
+        }
+      }
+    };
+  }
+
   const debouncedSync = debounce(() => {
     get().triggerSync();
-  }, 500);
+  }, 1000);
 
   return {
     docId: null,
@@ -55,6 +68,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
             if (get().docId === id) {
               set({ content: remoteContent });
             }
+            if (channel) {
+              channel.postMessage({ type: 'CONTENT_UPDATE', docId: id, content: remoteContent });
+            }
           }
         }
       } catch (error) {
@@ -68,6 +84,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
       set({ content: newContent });
       await idbSet(`doc_${docId}`, newContent);
+
+      if (channel) {
+        channel.postMessage({ type: 'CONTENT_UPDATE', docId, content: newContent });
+      }
 
       const queue: SyncQueueItem[] = (await idbGet('sync_queue')) || [];
       queue.push({
@@ -97,6 +117,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
         const { docId } = get();
         if (docId) {
           await idbSet(`doc_${docId}`, data.content);
+          if (channel) {
+            channel.postMessage({ type: 'CONTENT_UPDATE', docId, content: data.content });
+          }
         }
       } catch (error) {
         console.error("Error restoring version:", error);

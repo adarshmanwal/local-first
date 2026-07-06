@@ -26,7 +26,7 @@ export async function POST(req: Request) {
                 ...getDocumentScopeQuery(session.user.id, true)
             },
             { $set: { content: version.snapshot } },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!updatedDoc) {

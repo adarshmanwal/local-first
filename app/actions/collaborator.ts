@@ -23,7 +23,6 @@ export async function addCollaborator(formData: FormData) {
 
         await connectDB();
 
-        // 1. Verify ownership
         const doc = await AppDocument.findById(documentId);
         if (!doc) {
             return { error: 'Document not found' };
@@ -33,7 +32,6 @@ export async function addCollaborator(formData: FormData) {
             return { error: 'Only the owner can add collaborators' };
         }
 
-        // 2. Find the user to add
         const userToAdd = await User.findOne({ email });
         if (!userToAdd) {
             return { error: 'User with this email does not exist' };
@@ -43,14 +41,11 @@ export async function addCollaborator(formData: FormData) {
             return { error: 'You are already the owner of this document' };
         }
 
-        // 3. Check if they are already a collaborator
         const existingCollabIndex = doc.collaborators.findIndex((c: any) => c.userId.toString() === userToAdd._id.toString());
         
         if (existingCollabIndex > -1) {
-            // Update role if they exist
             doc.collaborators[existingCollabIndex].role = role;
         } else {
-            // Add new collaborator
             doc.collaborators.push({
                 userId: userToAdd._id,
                 role: role

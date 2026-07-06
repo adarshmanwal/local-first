@@ -38,17 +38,15 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    // 5. Tenant Isolation & Database Update (Phase 2 & 4)
-    // Only Owners and Editors can sync. Viewers are blocked at the database level.
     const updatedDoc = await Document.findOneAndUpdate(
       { 
         _id: docId,
-        ...getDocumentScopeQuery(userId, true) // requireEdit = true
+        ...getDocumentScopeQuery(userId, true)
       },
       { 
         $set: { content: content } 
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updatedDoc) {

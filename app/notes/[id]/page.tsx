@@ -11,12 +11,8 @@ export default async function EditorPage({ params }: { params: Promise<{ id: str
 
     const { id } = await params;
 
-    // Securely fetch the document via SSR
-    // By default, this ensures the user is either the Owner, Editor, or Viewer.
-    // If they have no access, withDocumentScoping throws an error which can be caught by an ErrorBoundary
     const document = await withDocumentScoping(id, session.user.id, 'Viewer');
 
-    // Determine Role
     const isOwner = document.ownerId.toString() === session.user.id;
     let role: 'Owner' | 'Editor' | 'Viewer' = 'Viewer';
     
@@ -33,6 +29,7 @@ export default async function EditorPage({ params }: { params: Promise<{ id: str
         <div className="min-h-screen bg-neutral-950 text-neutral-100 flex selection:bg-indigo-500/30 overflow-hidden">
             <EditorClient 
                 docId={id} 
+                title={document.title}
                 initialContent={document.content || ''} 
                 role={role} 
             />
